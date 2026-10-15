@@ -13,7 +13,11 @@ from cineagent.trusted_platform import platform_profile
 
 app = get_fast_api_app(
     agents_dir=os.path.dirname(os.path.abspath(__file__)),
+    # Pin every service to in-memory so local runs never pick up Agent Platform settings
+    # from the environment (for example GOOGLE_CLOUD_AGENT_ENGINE_ID).
     session_service_uri="memory://",
+    memory_service_uri="memory://",
+    artifact_service_uri="memory://",
     use_local_storage=False,
     web=True,
 )
