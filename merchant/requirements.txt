@@ -1,0 +1,6 @@
+mcp==2.3.0
+ucp-sdk==0.5.0
+ap2 @ git+https://github.com/google-agentic-commerce/AP2.git@b4587ac1d055888a73b4b21750973cffba961793
+rfc8785==0.1.4
+httpx==0.28.1
+uvicorn==0.54.0

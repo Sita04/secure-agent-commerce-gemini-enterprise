@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.local/
+cineagent/.env
+.adk/
+uv.lock
