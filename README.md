@@ -36,6 +36,24 @@ use the same `AGENT_PORT` for `./setup.sh test`.)
 The agent stops at an approval card for `complete_purchase(total_cents=3240)`. Approve it to get an order and a
 signed receipt, or decline and nothing is paid.
 
+### What you're seeing
+
+After each step the agent shows an **Under the hood** list, and the terminal running `./setup.sh local` prints the
+same story from both sides (`[platform]` lines are the agent's platform code, `[Meridian Cinemas]` lines are the
+merchant):
+
+| Step | What happens | Why it matters |
+|---|---|---|
+| 1. Discovery | The agent reads each merchant's `/.well-known/ucp`: its capabilities, that it **requires AP2 mandates**, and its public signing key | Merchants are found through an open standard, not custom integrations |
+| 2. Checkout | The merchant creates the checkout and **signs** the items and total (`ap2.merchant_authorization`); the agent verifies that signature | The price is locked: changing anything breaks the signature |
+| 3. Approval | ADK pauses `complete_purchase` until **you** approve the exact merchant, checkout, and amount | The model cannot approve a payment for you |
+| 4. Mandates | Deterministic platform code (never the model) signs a **Checkout Mandate** and a **Payment Mandate**, both bound to the hash of the merchant-signed checkout | Your approval becomes a credential that only works for this exact cart |
+| 5. Verification | The merchant fetches the platform's public key from its UCP profile, verifies both mandates, checks the checkout hash and amount, then issues the order and a signed receipt | The merchant enforces it; it doesn't have to trust the agent |
+
+To look closer, click any event in the ADK web UI's **Events** tab to see the raw tool call and response, or open
+http://127.0.0.1:8081/.well-known/ucp (a merchant profile) and http://127.0.0.1:8080/.well-known/ucp (the platform
+profile with the public key that verifies your mandates).
+
 ## Try to cheat it
 
 With `local` still running, open a second terminal:
@@ -43,6 +61,11 @@ With `local` still running, open a second terminal:
 ```bash
 ./setup.sh test
 ```
+
+This plays a compromised or buggy agent platform that talks straight to the merchant (no LLM involved). For each
+case it prints the attack, the defense that should stop it, the expected result, and what actually happened.
+Meanwhile the `./setup.sh local` terminal shows the merchant's side, for example
+`[Meridian Cinemas] REJECTED -> mandate_scope_mismatch`. Case 1 is the honest purchase, so you can compare.
 
 | Attack | Merchant's answer |
 |---|---|

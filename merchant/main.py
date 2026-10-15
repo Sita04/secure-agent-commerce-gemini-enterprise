@@ -10,6 +10,7 @@ Run locally:  THEATER=meridian PORT=8081 python merchant/main.py
 """
 
 import json
+import logging
 import os
 import uuid
 from typing import Any
@@ -32,6 +33,8 @@ from starlette.responses import JSONResponse
 from ucp_sdk.models.schemas.common.payment_ap2_mandate import Checkout
 from ucp_sdk.models.schemas.profile import BusinessSchema
 from ucp_sdk.models.schemas.shopping.catalog_search import SearchResponse
+
+logging.getLogger("httpx").setLevel(logging.WARNING)  # keep the terminal to the protocol story
 
 UCP_VERSION = "2026-08-25"
 UCP_SPEC = f"https://ucp.dev/{UCP_VERSION}"
@@ -169,8 +172,13 @@ def sign_checkout(checkout: dict) -> None:
     signed_checkouts[checkout["id"]] = checkout_jwt
 
 
+def log(text: str) -> None:
+    print(f"[{THEATER['name']}] {text}", flush=True)
+
+
 def error(code: str, content: str) -> dict:
     """A UCP business outcome error (returned as a result, not a protocol error)."""
+    log(f"REJECTED -> {code}: {content}")
     return {
         "ucp": {"version": UCP_VERSION, "status": "error"},
         "messages": [
@@ -367,6 +375,9 @@ def create_checkout(meta: dict, checkout: dict) -> dict[str, Any]:
     sign_checkout(session)
     sessions[session["id"]] = session
     Checkout.model_validate(session)
+    items = ", ".join(f"{li['quantity']} x {li['item']['title']}" for li in line_items)
+    log(f"create_checkout {session['id']}: {items} = ${(subtotal + tax) / 100:.2f}. "
+        f"Signed it with merchant key '{KEY.kid}' (ap2.merchant_authorization), which locks the price.")
     return session
 
 
@@ -444,6 +455,8 @@ def complete_checkout(meta: dict, id: str, checkout: dict) -> dict[str, Any]:
             "The mandates are bound to a different checkout or amount",
         )
 
+    log(f"complete_checkout {id}: platform key fetched from {meta['ucp-agent']['profile']}; both mandate "
+        f"signatures valid; both bound to the checkout hash I signed ({checkout_hash[:12]}...); amount {total} matches.")
     order_id = f"ord_{uuid.uuid4().hex[:8]}"
     session["status"] = "completed"
     session["order"] = {
@@ -465,6 +478,7 @@ def complete_checkout(meta: dict, id: str, checkout: dict) -> dict[str, Any]:
         receipt.model_dump(mode="json", exclude_none=True),
         KEY,
     )
+    log(f"ORDER {order_id} created; returned a signed AP2 Checkout Receipt.")
     return {**session, "ap2": {**session["ap2"], "checkout_receipt": receipt_jwt}}
 
 

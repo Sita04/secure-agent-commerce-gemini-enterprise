@@ -100,6 +100,12 @@ async def call(url: str, tool: str, arguments: dict) -> dict:
     return result.structured_content or {}
 
 
+def step(text: str) -> str:
+    """Print a protocol step in the agent's terminal and return it for the agent to show."""
+    print(f"[platform] {text}", flush=True)
+    return text
+
+
 def short_error(e: BaseException) -> str:
     """One line for the model, e.g. '403 Forbidden' when Agent Gateway denies egress."""
     while isinstance(e, BaseExceptionGroup) and e.exceptions:
