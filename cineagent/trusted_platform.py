@@ -29,12 +29,12 @@ AP2_CAPABILITY = "dev.ucp.common.payment.ap2_mandate"
 
 # Where this platform publishes its UCP profile (merchants fetch our public key there).
 PROFILE_URL = os.environ.get(
-    "PLATFORM_PROFILE_URL", "http://localhost:8080/.well-known/ucp"
+    "PLATFORM_PROFILE_URL", "http://127.0.0.1:8080/.well-known/ucp"
 )
 MERCHANT_URLS = [
     u.strip()
     for u in os.environ.get(
-        "MERCHANT_URLS", "http://localhost:8081,http://localhost:8082"
+        "MERCHANT_URLS", "http://127.0.0.1:8081,http://127.0.0.1:8082"
     ).split(",")
     if u.strip()
 ]

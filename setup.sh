@@ -17,6 +17,14 @@ AP2_COMMIT=b4587ac1d055888a73b4b21750973cffba961793   # AP2 v0.2.0
 AIP="google-cloud-aiplatform[agent_engines,adk]==2.5.0"
 mkdir -p "$STATE"
 
+# Local ports. Override with AGENT_PORT=9080 ./setup.sh local ... if 8080 is taken.
+AGENT_PORT="${AGENT_PORT:-8080}"; MERIDIAN_PORT="${MERIDIAN_PORT:-8081}"; STARLIGHT_PORT="${STARLIGHT_PORT:-8082}"
+local_env() {   # the agent and the merchants must agree on these URLs
+  export PLATFORM_PROFILE_URL=http://127.0.0.1:$AGENT_PORT/.well-known/ucp
+  export TRUSTED_PLATFORM_PROFILES=$PLATFORM_PROFILE_URL
+  export MERCHANT_URLS=http://127.0.0.1:$MERIDIAN_PORT,http://127.0.0.1:$STARLIGHT_PORT
+}
+
 need() { command -v "$1" >/dev/null || { echo "Missing $1. Install it first ($2)."; exit 1; }; }
 step() { echo; echo "==> $*"; }
 need uv "https://docs.astral.sh/uv/"
@@ -54,6 +62,7 @@ case "$MODE" in
 local)
   [ -n "$PROJECT_ID" ] || { echo "Usage: ./setup.sh local PROJECT_ID"; exit 1; }
   uv sync -q
+  local_env
   cat > cineagent/.env <<EOF
 GOOGLE_CLOUD_PROJECT=$PROJECT_ID
 GOOGLE_CLOUD_LOCATION=global
@@ -61,17 +70,18 @@ GOOGLE_GENAI_USE_ENTERPRISE=True
 EOF
   export PLATFORM_SIGNING_KEY="$(new_key cineagent-1)"
   trap 'kill $(jobs -p) 2>/dev/null' EXIT
-  THEATER=meridian PORT=8081 uv run python merchant/main.py &
-  THEATER=starlight PORT=8082 uv run python merchant/main.py &
+  THEATER=meridian PORT=$MERIDIAN_PORT uv run python merchant/main.py &
+  THEATER=starlight PORT=$STARLIGHT_PORT uv run python merchant/main.py &
   echo
-  echo "Merchants: http://localhost:8081/.well-known/ucp  http://localhost:8082/.well-known/ucp"
-  echo "Agent:     http://localhost:8080  (pick 'cineagent', then ask: Book 2 tickets for Oppenheimer at 9:30 PM)"
+  echo "Merchants: http://127.0.0.1:$MERIDIAN_PORT/.well-known/ucp  http://127.0.0.1:$STARLIGHT_PORT/.well-known/ucp"
+  echo "Agent:     http://127.0.0.1:$AGENT_PORT  (pick 'cineagent', then ask: Book 2 standard tickets for Oppenheimer at 9:30 PM at Meridian)"
   echo "Attacks:   in another terminal run ./setup.sh test"
   echo
-  uv run python server.py
+  PORT=$AGENT_PORT uv run python server.py
   ;;
 
 test)
+  local_env
   PLATFORM_SIGNING_KEY="$(cat "$STATE/cineagent-1.jwk")" uv run python attack_tests.py
   ;;
 

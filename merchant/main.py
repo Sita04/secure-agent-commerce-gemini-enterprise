@@ -114,13 +114,13 @@ THEATERS = {
 
 THEATER = THEATERS[os.environ.get("THEATER", "meridian")]
 PORT = int(os.environ.get("PORT", "8081"))
-PUBLIC_URL = os.environ.get("PUBLIC_URL", f"http://localhost:{PORT}").rstrip("/")
+PUBLIC_URL = os.environ.get("PUBLIC_URL", f"http://127.0.0.1:{PORT}").rstrip("/")
 # Platforms (shopping agents) whose mandate signatures this merchant accepts.
 # The merchant reads each platform's public keys from its UCP profile URL.
 TRUSTED_PLATFORMS = {
     p.strip()
     for p in os.environ.get(
-        "TRUSTED_PLATFORM_PROFILES", "http://localhost:8080/.well-known/ucp"
+        "TRUSTED_PLATFORM_PROFILES", "http://127.0.0.1:8080/.well-known/ucp"
     ).split(",")
     if p.strip()
 }

@@ -26,9 +26,12 @@ gcloud auth application-default login
 ./setup.sh local YOUR_PROJECT_ID
 ```
 
-Open http://localhost:8080, pick `cineagent`, and ask:
+Open http://127.0.0.1:8080, pick `cineagent`, and ask:
 
 > Book 2 standard tickets for Oppenheimer at 9:30 PM at Meridian
+
+(If port 8080 is already in use on your machine, run `AGENT_PORT=9080 ./setup.sh local YOUR_PROJECT_ID` and
+use the same `AGENT_PORT` for `./setup.sh test`.)
 
 The agent stops at an approval card for `complete_purchase(total_cents=3240)`. Approve it to get an order and a
 signed receipt, or decline and nothing is paid.
